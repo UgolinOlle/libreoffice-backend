@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "scripts": {
     "start": "clear && ts-node src/server.ts",
-    "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "build": "tsc",
-    "serve": "node dist/server.js"
+    "start:dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "start:build": "tsc",
+    "start:serve": "node dist/server.js"
   },
   "keywords": [],
   "author": "Ugolin Olle<hello@ugolin-olle.com>",
