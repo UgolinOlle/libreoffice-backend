@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
+import Logger from "./logger";
 
 export const loadEnv = (): void => {
   const envPath = path.join(__dirname, "../../.env");
@@ -7,9 +8,9 @@ export const loadEnv = (): void => {
   const result = dotenv.config({ path: envPath });
 
   if (result.error) {
-    console.error("Erreur lors du chargement du fichier .env :", result.error);
+    Logger.send("ERROR", "Error while loading environment variables.");
     process.exit(1);
   }
 
-  console.log("Les variables d'environnement ont été chargées avec succès.");
+  Logger.send("INFO", "Environment variables loaded.");
 };
