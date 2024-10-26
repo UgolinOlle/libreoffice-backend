@@ -9,46 +9,54 @@ import db from "../src/lib/database";
 
 const NUMBER_OF_CLIENTS = 100;
 
+const createTableIfNotExists = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS clients (
+      id SERIAL PRIMARY KEY,
+      address TEXT,
+      clients_liste TEXT,
+      advisor_last_name VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  
+  try {
+    await db.query(query);
+    Logger.send("INFO", "Table 'clients' created or already exists.");
+  } catch (error: any) {
+    Logger.send("ERROR", `Error creating table: ${error.message}`);
+    process.exit(1);
+  }
+};
+
 const insertFakeClients = async () => {
   try {
-    console.info(process.env.DB_USER);
+    await db.connect();
+    Logger.send("INFO", "Connected to the database successfully.");
 
-    await db
-      .connect()
-      .then(() => {
-        Logger.send("INFO", "Connected to the database successfully.");
-      })
-      .catch((error: any) => {
-        Logger.send(
-          "ERROR",
-          `Error while connecting to the database: ${error.message}`,
-        );
-        process.exit(1);
-      });
+    await createTableIfNotExists();
 
     Logger.send("INFO", `Insertion of ${NUMBER_OF_CLIENTS} fake clients...`);
 
     for (let i = 0; i < NUMBER_OF_CLIENTS; i++) {
-      const name = faker.person.fullName();
       const address = faker.location.streetAddress();
-      const email = faker.internet.email();
-      const advisor_first_name = faker.person.firstName();
+      const clients_liste = faker.lorem.words(5).split(' ').join(', ');
       const advisor_last_name = faker.person.lastName();
+      const created_at = faker.date.past();
 
       const query = `
-        INSERT INTO clients (name, address, email, advisor_first_name, advisor_last_name)
-        VALUES ($1, $2, $3, $4, $5)
+        INSERT INTO clients (address, clients_liste, advisor_last_name, created_at)
+        VALUES ($1, $2, $3, $4)
       `;
       const values = [
-        name,
         address,
-        email,
-        advisor_first_name,
+        clients_liste,
         advisor_last_name,
+        created_at,
       ];
 
       await db.insert(query, values);
-      Logger.send("DEBUG", `Client ${name} inserted successfully.`);
+      Logger.send("DEBUG", `Client with address ${address} inserted successfully.`);
     }
 
     Logger.send("INFO", "All fake clients have been inserted successfully.");

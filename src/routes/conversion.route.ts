@@ -5,6 +5,6 @@ import { convertDocument } from "~/controllers";
 const conversionRouter = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-conversionRouter.post("/convert", upload.single('file'), convertDocument);
+conversionRouter.post("/convert", upload.single("file"), convertDocument);
 
 export { conversionRouter };
