@@ -6,8 +6,8 @@ import { BASE_API_URL } from "~/lib";
 
 const app = express();
 
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ extended: true, limit: "50mb" }));
 
 app.use(BASE_API_URL, conversionRouter);
 app.use(BASE_API_URL, templateRouter);
