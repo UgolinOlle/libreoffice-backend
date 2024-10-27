@@ -29,12 +29,64 @@ const createTableIfNotExists = async () => {
   }
 };
 
+const createDataListsTableIfNotExists = async () => {
+  const query = `
+    CREATE TABLE IF NOT EXISTS data_lists (
+      id SERIAL PRIMARY KEY,
+      list_name VARCHAR(255) NOT NULL,
+      values TEXT[] NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `;
+  
+  try {
+    await db.query(query);
+    Logger.send("INFO", "Table 'data_lists' created or already exists.");
+  } catch (error: any) {
+    Logger.send("ERROR", `Error creating data_lists table: ${error.message}`);
+    process.exit(1);
+  }
+};
+
+const insertDataLists = async () => {
+  const dataLists = [
+    {
+      list_name: "Fruits",
+      values: ["Apple", "Banana", "Cherry", "Date", "Elderberry"]
+    },
+    {
+      list_name: "Colors",
+      values: ["Red", "Blue", "Green", "Yellow", "Purple"]
+    },
+    {
+      list_name: "Countries",
+      values: ["France", "Germany", "Italy", "Spain", "Portugal"]
+    }
+  ];
+
+  for (const list of dataLists) {
+    const query = `
+      INSERT INTO data_lists (list_name, values)
+      VALUES ($1, $2)
+    `;
+    const values = [list.list_name, list.values];
+
+    try {
+      await db.insert(query, values);
+      Logger.send("DEBUG", `Data list '${list.list_name}' inserted successfully.`);
+    } catch (error: any) {
+      Logger.send("ERROR", `Error inserting data list '${list.list_name}': ${error.message}`);
+    }
+  }
+};
+
 const insertFakeClients = async () => {
   try {
     await db.connect();
     Logger.send("INFO", "Connected to the database successfully.");
 
     await createTableIfNotExists();
+    await createDataListsTableIfNotExists();
 
     Logger.send("INFO", `Insertion of ${NUMBER_OF_CLIENTS} fake clients...`);
 
@@ -59,12 +111,15 @@ const insertFakeClients = async () => {
       Logger.send("DEBUG", `Client with address ${address} inserted successfully.`);
     }
 
-    Logger.send("INFO", "All fake clients have been inserted successfully.");
+    Logger.send("INFO", "Inserting data lists...");
+    await insertDataLists();
+
+    Logger.send("INFO", "All fake clients and data lists have been inserted successfully.");
     process.exit(0);
   } catch (error: any) {
     Logger.send(
       "ERROR",
-      `Error while inserting fake clients: ${error.message}`,
+      `Error while inserting fake data: ${error.message}`,
     );
     process.exit(1);
   }

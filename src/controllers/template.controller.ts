@@ -1,15 +1,13 @@
 import { Request, Response } from "express";
-import fs from "fs";
 import path from "path";
-import PizZip from "pizzip";
-import Docxtemplater from "docxtemplater";
-
-import db from "~/lib/database";
+import fs from "fs";
 import { ErrorHandler, Logger } from "~/lib";
+import db from "~/lib/database";
+import { generateDocumentFromTemplate } from "~/services/docx.service";
 
 export const generateDocument = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const { templateName, clientId } = req.body;
@@ -17,32 +15,11 @@ export const generateDocument = async (
     if (!req.file) {
       return ErrorHandler.handleValidationError(
         new Error("Veuillez fournir un fichier template docx."),
-        res
+        res,
       );
     }
 
     const templatePath = req.file.path;
-    const templateContent = fs.readFileSync(templatePath, "binary");
-    const zip = new PizZip(templateContent);
-    const customParser = (tag: string | number) => {
-      return {
-        get: (scope: { [x: string]: any; }) => {
-          if (scope[tag]) {
-            return scope[tag];
-          }
-          return `$${tag}$`;
-        },
-      };
-    };
-    const doc = new Docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true,
-      delimiters: {
-        start: '$',
-        end: '$'
-      },
-      parser: customParser
-    });
     const clientData = await db.query("SELECT * FROM clients WHERE id = $1", [
       clientId,
     ]);
@@ -52,24 +29,40 @@ export const generateDocument = async (
     }
 
     const client = clientData[0];
-    const data = {
-      name: client.name,
-      address: client.address,
-      email: client.email,
-      clients_liste: client.clients_liste.split(', ').join('\n'),
-      advisor_last_name: client.advisor_last_name,
-    };
+    const tableData = await db.query(
+      "SELECT list_name, values FROM data_lists",
+    );
 
-    doc.setData(data);
+    const formattedTableData = tableData.map((row: any) => {
+      let values = row.values;
 
-    try {
-      doc.render();
-    } catch (error) {
-      Logger.send("ERROR", `Error while rendering the document: ${error}`);
-      return ErrorHandler.handleError(error, res);
-    }
+      if (typeof row.values === "string" && row.values.startsWith("[")) {
+        try {
+          values = JSON.parse(row.values);
+        } catch (e) {
+          Logger.send("WARN", `Failed to parse JSON values: ${row.values}`);
+          values = row.values.split(",");
+        }
+      } else if (typeof row.values === "string") {
+        values = row.values.split(",").map((v: any) => v.trim());
+      }
 
-    const buffer = doc.getZip().generate({ type: "nodebuffer" });
+      return {
+        list_name: row.list_name,
+        values: values,
+      };
+    });
+
+    Logger.send(
+      "INFO",
+      `Processed table data: ${JSON.stringify(formattedTableData, null, 2)}`,
+    );
+
+    const buffer = await generateDocumentFromTemplate(
+      templatePath,
+      client,
+      formattedTableData,
+    );
     const outputFileName = `filled-${templateName}-${Date.now()}.docx`;
     const outputPath = path.join(__dirname, "../../uploads", outputFileName);
 
@@ -78,12 +71,13 @@ export const generateDocument = async (
 
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${outputFileName}`
+      `attachment; filename=${outputFileName}`,
     );
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
+
     res.send(buffer);
 
     fs.unlinkSync(templatePath);
