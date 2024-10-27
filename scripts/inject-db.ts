@@ -7,7 +7,7 @@ loadEnv();
 
 import db from "../src/lib/database";
 
-const NUMBER_OF_CLIENTS = 100;
+const NUMBER_OF_CLIENTS = 500;
 
 const createTableIfNotExists = async () => {
   const query = `
@@ -15,7 +15,7 @@ const createTableIfNotExists = async () => {
       id SERIAL PRIMARY KEY,
       address TEXT,
       clients_liste TEXT,
-      advisor_last_name VARCHAR(255),
+      date TIMESTAMP,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
   `;
@@ -93,17 +93,16 @@ const insertFakeClients = async () => {
     for (let i = 0; i < NUMBER_OF_CLIENTS; i++) {
       const address = faker.location.streetAddress();
       const clients_liste = faker.lorem.words(5).split(' ').join(', ');
-      const advisor_last_name = faker.person.lastName();
+      const date = faker.date.anytime();
       const created_at = faker.date.past();
-
       const query = `
-        INSERT INTO clients (address, clients_liste, advisor_last_name, created_at)
+        INSERT INTO clients (address, clients_liste, date, created_at)
         VALUES ($1, $2, $3, $4)
       `;
       const values = [
         address,
         clients_liste,
-        advisor_last_name,
+        date,
         created_at,
       ];
 
