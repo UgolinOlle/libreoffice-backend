@@ -8,7 +8,7 @@ import { generateDocumentFromTemplate } from "~/services/docx.service";
 
 export const generateDocument = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     const clientId = req.body.clientId;
@@ -16,7 +16,7 @@ export const generateDocument = async (
     if (!req.file) {
       return ErrorHandler.handleValidationError(
         new Error("Veuillez fournir un fichier template docx."),
-        res
+        res,
       );
     }
 
@@ -32,7 +32,7 @@ export const generateDocument = async (
 
     const client = clientData[0];
     const tableData = await db.query(
-      "SELECT list_name, values FROM data_lists"
+      "SELECT list_name, values FROM data_lists",
     );
     const formattedTableData = tableData.map((row: any) => {
       let values = row.values;
@@ -57,9 +57,8 @@ export const generateDocument = async (
     const buffer = await generateDocumentFromTemplate(
       templatePath,
       client,
-      formattedTableData
+      formattedTableData,
     );
-
     const outputFileName = `filled-${templateName}-${Date.now()}.docx`;
     const outputPath = path.join(__dirname, "../../uploads", outputFileName);
 
@@ -68,13 +67,12 @@ export const generateDocument = async (
 
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${outputFileName}`
+      `attachment; filename=${outputFileName}`,
     );
     res.setHeader(
       "Content-Type",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     );
-
     res.download(outputPath, outputFileName, (err: Error) => {
       if (err) {
         Logger.send("ERROR", `An error occured while sending file: ${err}`);
