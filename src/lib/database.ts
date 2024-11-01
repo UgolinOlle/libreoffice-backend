@@ -1,5 +1,9 @@
 import { Pool, PoolConfig } from "pg";
+
 import Logger from "./logger";
+import { loadEnv } from "./utils";
+
+loadEnv();
 
 class DB {
   private pool: Pool;
@@ -11,13 +15,12 @@ class DB {
   public async connect(): Promise<void> {
     try {
       await this.pool.connect();
-      Logger.send("INFO", "Connexion à la base de données réussie.");
+      Logger.send("SUCCESS", "Successfully connected to the database.");
     } catch (error: any) {
       Logger.send(
         "ERROR",
-        `Erreur de connexion à la base de données : ${error.message}`,
+        `Error connecting to the database: ${error.message}`,
       );
-      throw error;
     }
   }
 

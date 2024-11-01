@@ -7,20 +7,19 @@ import { ErrorHandler, Logger } from "~/lib";
 
 export const convertDocument = async (
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> => {
   try {
     console.info(
-      "-------------------------------------------------------------------------------"
+      "-------------------------------------------------------------------------------",
     );
     console.log("Headers:", req.headers);
-    console.log("Body:", req.body);
     console.log("File:", req.file);
 
     if (!req.file) {
       return ErrorHandler.handleValidationError(
         new Error("Veuillez fournir un fichier à convertir."),
-        res
+        res,
       );
     }
 
@@ -45,12 +44,11 @@ export const convertDocument = async (
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${outputFileName}`
+      `attachment; filename=${outputFileName}`,
     );
 
     res.send(fileData);
 
-    // Nettoyage des fichiers temporaires
     fs.unlinkSync(inputPath);
     fs.unlinkSync(outputPath);
     Logger.send("INFO", "Temporary files deleted.");

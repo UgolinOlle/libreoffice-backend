@@ -1,2 +1,2 @@
 export { convertToFormat } from "./libre-office.service";
-export { generateDocumentFromTemplate } from "./docx.service";
+export { replaceSQLiteInDocx } from "./docx.service";

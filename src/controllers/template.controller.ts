@@ -1,10 +1,8 @@
 import { Request, Response } from "express";
 import path from "path";
-import fs from "fs";
 
-import { ErrorHandler, Logger } from "~/lib";
-import db from "~/lib/database";
-import { generateDocumentFromTemplate } from "~/services/docx.service";
+import { ErrorHandler, Logger, updateSQLite } from "~/lib";
+import { replaceSQLiteInDocx } from "~/services";
 
 export const generateDocument = async (
   req: Request,
@@ -20,68 +18,20 @@ export const generateDocument = async (
       );
     }
 
+    await updateSQLite(clientId);
+
     const templatePath = req.file.path;
-    const templateName = req.file.originalname;
-    const clientData = await db.query("SELECT * FROM clients WHERE id = $1", [
-      clientId,
-    ]);
+    const sqlitePath = path.join(__dirname, "../../data.sqlite");
+    const outputPath = path.join(__dirname, "../../output.docx");
 
-    if (clientData.length === 0) {
-      return ErrorHandler.handleNotFoundError(res, "Client");
-    }
+    replaceSQLiteInDocx(templatePath, sqlitePath, outputPath);
 
-    const client = clientData[0];
-    const tableData = await db.query(
-      "SELECT list_name, values FROM data_lists",
-    );
-    const formattedTableData = tableData.map((row: any) => {
-      let values = row.values;
-
-      if (typeof values === "string" && values.startsWith("[")) {
-        try {
-          values = JSON.parse(values);
-        } catch (e) {
-          Logger.send("WARN", `Failed to parse JSON values: ${values}`);
-          values = values.split(",");
-        }
-      } else if (typeof values === "string") {
-        values = values.split(",").map((v: any) => v.trim());
-      }
-
-      return {
-        list_name: row.list_name,
-        values: values,
-      };
-    });
-
-    const buffer = await generateDocumentFromTemplate(
-      templatePath,
-      client,
-      formattedTableData,
-    );
-    const outputFileName = `filled-${templateName}-${Date.now()}.docx`;
-    const outputPath = path.join(__dirname, "../../uploads", outputFileName);
-
-    fs.writeFileSync(outputPath, buffer);
-    Logger.send("INFO", `Filled template saved at: ${outputPath}`);
-
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${outputFileName}`,
-    );
-    res.setHeader(
-      "Content-Type",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    );
-    res.download(outputPath, outputFileName, (err: Error) => {
+    res.download(outputPath, "output.docx", (err) => {
       if (err) {
-        Logger.send("ERROR", `An error occured while sending file: ${err}`);
-        res.status(500).send("An error occured while sending file.");
+        console.error("Erreur lors de l'envoi du fichier :", err);
+        res.status(500).send("Erreur lors de l'envoi du fichier");
       }
     });
-
-    fs.unlinkSync(templatePath);
-    Logger.send("INFO", "Temp template deleted.");
   } catch (error) {
     Logger.send("ERROR", `Error while creating the document: ${error}`);
     ErrorHandler.handleError(error, res);

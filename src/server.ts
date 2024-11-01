@@ -1,8 +1,4 @@
-import { LAUNCH, loadEnv, Logger } from "~/lib";
-
-// --- Load environment variables
-loadEnv();
-
+import { LAUNCH, Logger } from "~/lib";
 import db from "~/lib/database";
 import app from "~/app";
 

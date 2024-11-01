@@ -12,5 +12,5 @@ export const loadEnv = (): void => {
     process.exit(1);
   }
 
-  Logger.send("INFO", "Environment variables loaded.");
+  Logger.send("SUCCESS", "Environment variables loaded.");
 };
